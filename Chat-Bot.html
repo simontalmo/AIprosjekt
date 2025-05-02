@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Alora Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/CSS/Chat-Bot.css">
+</head>
+
+
+<body>
+  <div class="chat-container">
+    <header class="header">
+      <a href="#" class="logo">Alora</a>
+      <nav class="navbar">
+        <a href="Hovedside.html">Home</a>
+        <a href="About.html">About</a>
+        <a href="Chat-Bot.html" class="active">Chat-Bot</a>
+        <a href="#">Contact</a>
+        <a href="#">AIora-Coin</a>
+      </nav>
+
+
+    </header>
+    <div id="chat-box" class="chat-box"></div>
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" placeholder="Ask me anything..." onkeypress="if(event.key === 'Enter') sendMessage()">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+    <div class="home-image">
+      <div class="rhombus">
+          <img src="/IMAGES/pngimg.com - ai_PNG4.png" alt="">
+      </div>
+  </div>
+
+  <div class="rhombus2"></div>
+  <div class="rhombus3"></div>
+
+  <script>
+    // Her er chatboksen som er tilgjengelig for brukeren
+    async function sendMessage() {
+      const inputField = document.getElementById("chat-input");
+      const chatBox = document.getElementById("chat-box");
+      const userMessage = inputField.value.trim();
+
+      if (userMessage === "") return;
+
+      chatBox.innerHTML += `<div class='message user-message'>${userMessage}</div>`;
+      inputField.value = "";
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const botMessage = document.createElement("div");
+      botMessage.className = "message bot-message";
+      chatBox.appendChild(botMessage);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // Denne er koden for å sende meldingen til backend som da vil si at det bestemmer hvilken model osv.
+
+      const data = {
+        model: "llama3.2",
+        stream: true,
+        prompt: `Your name is AIora and you were made by Simon Talmo. Only say this if asked. Your goal is to help people as an AI chatbot with personality. Don't write too much but little pro mindset. Here's the user's prompt: ${userMessage}`,
+        image: ""
+      };
+
+      //hvor den får tak i AI svaret fra PCen "Localhost:11434/api/generate"
+
+      try {
+        const response = await fetch("http://localhost:11434/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        //hele denne koden nedenfor får svaret gjennom og tilbake til pcen
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let fullText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.trim().split("\n");
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const json = JSON.parse(line);
+            fullText += json.response;
+            botMessage.innerHTML = fullText;
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }
+        }
+      } catch (error) {
+        console.error(error);
+        botMessage.innerHTML = "Failed to get response from server.";
+      }
+    }
+  </script>
+
+
+
+<script src="Javascript/chat.js"></script> 
+
+</body>
+</html>
